@@ -3,15 +3,13 @@ import socket
 from threading import Thread
 import json
 
-class Server(Thread):
-    def __init__(self, path: Path):
-        Thread.__init__(self)
-        print("New server thread created.")
 
+class Server(object):
+    def __init__(self, path: Path):
         self.destination_path = path
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.bind(('', 12345))
-        self.running=True
+        self.running = True
 
     def run(self):
         self.socket.listen()
@@ -21,12 +19,10 @@ class Server(Thread):
             msg = conn.recv(9999999999)
             if not msg:
                 break
-            print(msg)
             json_representation = json.loads(msg)
             self.save(json_representation)
         conn.close()
         print("Client-server connection closed.")
-
 
     def save(self, file: dict):
         dst_path = self.convert_src_to_dst_path(Path(file["path"]))
