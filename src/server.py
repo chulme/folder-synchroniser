@@ -4,12 +4,13 @@ from threading import Thread
 import json
 
 
-class Server(object):
+class Server(Thread):
     def __init__(self, path: Path):
         """ Initialiser for server.
         Args:
             path (Path): Path of source directory to synchronise with server.
         """
+        Thread.__init__(self, daemon=False)
         self.destination_path = path
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.bind(('', 12345))
@@ -42,9 +43,12 @@ class Server(object):
             file (dict[str,str]): Original file path and encoded data to save.
         """
         dst_path = Server.convert_src_to_dst_path(Path(file["path"]))
-        print(f'Server saving {dst_path.name}')
+        print(f'Server saving {dst_path}')
         dst_path.parent.mkdir(parents=True, exist_ok=True)
-        dst_path.write_bytes(bytes(file["data"], 'ISO8859-1'))
+        if("data" in file):
+            dst_path.write_bytes(bytes(file["data"], 'ISO8859-1'))
+        else:
+            dst_path.unlink()
 
     @staticmethod
     def convert_src_to_dst_path(path: Path) -> Path:
@@ -56,5 +60,6 @@ class Server(object):
     def terminate(self):
         """ Called to safely stop the server.
         """
+        print("Server terminating.")
         self.running = False
         self.socket.close()

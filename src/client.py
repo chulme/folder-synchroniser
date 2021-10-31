@@ -1,3 +1,4 @@
+from os import remove
 from pathlib import Path
 from datetime import datetime
 import socket
@@ -6,13 +7,14 @@ import time
 import json
 
 
-class Client(object):
+class Client(Thread):
 
     def __init__(self, path: Path):
         """ Initialiser for client.
         Args:
             path (Path): Path of source directory to synchronise with server.
         """
+        Thread.__init__(self, daemon=False)
         self.source_path = path
         self.last_poll_time = datetime.fromtimestamp(
             100000)  # init to 1970-01-02
@@ -30,10 +32,17 @@ class Client(object):
         self.socket.connect((socket.gethostname(), 12345))
 
         while self.running:
+            print(self.seen_files)
             files = self.get_files_in_dir(self.source_path)
+
             modified_files = self.get_modified_files(files)
-            if len(modified_files) > 0:
-                self.send(modified_files)
+            deleted_files = self.get_deleted_files(files)
+
+            files_to_send = modified_files+deleted_files
+
+            if len(files_to_send) > 0:
+                self.send_modified(files_to_send)
+
             self.last_poll_time = datetime.now()
             time.sleep(0.5)
 
@@ -56,9 +65,8 @@ class Client(object):
         return files
 
     def get_modified_files(self, files: list[Path]) -> list[Path]:
-        """ Selects files that have been copied, modified, and deleted files.
-
-            This is done in a single function/loop for efficiency.
+        """ Selects files that are new, copied and modified files, while adding
+            new files to the seen_files list for future reference.
 
         Args:
             files (list): files to determine the status of.
@@ -67,11 +75,17 @@ class Client(object):
             list: File paths of modified files.
         """
         modified_files = []
+        new_files = []
+
         for file in files:
-            if self.is_unseen_file(file) or self.has_file_changed(file):
-                modified_files.append(file)
+            if self.is_unseen_file(file):
+                new_files.append(file)
                 self.seen_files.append(file)
-        return modified_files
+
+            elif self.has_file_changed(file):
+                modified_files.append(file)
+
+        return modified_files+new_files
 
     def has_file_changed(self, file: Path) -> bool:
         """ Determines if a file has been modified.
@@ -88,7 +102,7 @@ class Client(object):
         return file.stat().st_mtime > self.last_poll_time.timestamp()
 
     def is_unseen_file(self, path: Path) -> bool:
-        """ Determines if a file is new to the client.
+        """ Determines if a file is new to the client directory.
 
         Args:
             files (Path): file to check.
@@ -98,7 +112,26 @@ class Client(object):
         """
         return path not in self.seen_files
 
-    def send(self, files: list[Path]):
+    def get_deleted_files(self, files: list[Path]) -> list[Path]:
+        """ Returns all files that have been deleted, and then removes
+            these elements from the seen_list.
+
+        Args:
+            files (list[Path]): list of paths to search over
+
+        Returns:
+            list[Path]: List of deleted files
+        
+        """
+        removed_files = list(set(self.seen_files)-(set(files)))
+
+        for file in removed_files:
+            if file in self.seen_files:
+                self.seen_files.remove(file)
+
+        return removed_files
+
+    def send_modified(self, files: list[Path]):
         """ Sends each modified file to the server.
 
             Data in wrapped in a JSON format, containing the original file path and ISO8859-1 encoded data.
@@ -111,12 +144,19 @@ class Client(object):
         for file in files:
             time.sleep(0.1)
             print(f'Client sending \'{file.name}\'')
-            json_representation = json.dumps({"path": str(file),
-                                              "data": file.read_bytes().decode('ISO8859-1')})
+
+            json_representation = {}
+            if file.exists():
+                json_representation = json.dumps({"path": str(file),
+                                                  "data": file.read_bytes().decode('ISO8859-1')})
+            else:
+                json_representation = json.dumps({"path": str(file)})
+
             self.socket.send(json_representation.encode())
 
     def terminate(self):
         """ Called to safely stop the client.
         """
+        print("Client terminating.")
         self.running = False
         self.socket.close()
