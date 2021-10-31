@@ -1,19 +1,10 @@
-import sys
-import os
 import shutil
-
-sys.path.append(os.path.dirname(
-    os.path.realpath(__file__)) + "\\..\\..\\..\\src")
-
-
-import client as cl
-import server as srv
-import environment
 from behave import given, when, then
 from pathlib import Path
 import time
 import threading
-
+from src import client as cl
+from src import server as srv
 
 
 @given(u'Source-destination folders are created')
