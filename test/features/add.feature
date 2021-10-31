@@ -1,4 +1,4 @@
-Feature: Synchronise by adding new item
+Feature: Detection and saving of new files
     Scenario: Synchronise single tiered directory
         Given Source-destination folders are created
         Given Client and server are ran concurrently

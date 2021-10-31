@@ -1,4 +1,4 @@
-Feature: Detection and removal of an existing item
+Feature: Detection and removal of existing files
     Scenario: Synchronise directories when a file is removed
         Given Source-destination folders are created
         Given Client and server are ran concurrently
