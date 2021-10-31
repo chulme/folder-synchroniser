@@ -1,4 +1,4 @@
-from pathlib import Path
+from pathlib import Path, PurePath
 import socket
 from threading import Thread
 import json
@@ -11,7 +11,7 @@ class Server(Thread):
             path (Path): Path of source directory to synchronise with server.
         """
         Thread.__init__(self, daemon=False)
-        self.destination_path = path
+        self.destination_path = Path(path)
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.bind(('', 12345))
         self.running = True
@@ -35,14 +35,14 @@ class Server(Thread):
         conn.close()
         print("Client-server connection closed.")
 
-    @staticmethod
-    def save(file: dict[str, str]):
+    def save(self, file: dict[str, str]):
         """ Saves received files to the destination directory.
 
         Args:
             file (dict[str,str]): Original file path and encoded data to save.
         """
-        dst_path = Server.convert_src_to_dst_path(Path(file["path"]))
+        dst_path = self.convert_to_dst_path(Path(file["path"]))
+
         dst_path.parent.mkdir(parents=True, exist_ok=True)
         if("data" in file):
             print(f'Server saving {dst_path}')
@@ -51,12 +51,11 @@ class Server(Thread):
             print(f'Server deleting {dst_path}')
             dst_path.unlink(missing_ok=True)
 
-    @staticmethod
-    def convert_src_to_dst_path(path: Path) -> Path:
-        """ Converts the received original path of a file, to the equivalent location
+    def convert_to_dst_path(self, path: Path) -> Path:
+        """ Converts the relative path of a file, to the full path
             in the destination folder.
         """
-        return Path(str(path).replace("src", "dst"))
+        return Path(self.destination_path, path)
 
     def terminate(self):
         """ Called to safely stop the server.

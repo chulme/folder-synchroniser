@@ -1,4 +1,4 @@
-from os import remove
+import os
 from pathlib import Path
 from datetime import datetime
 import socket
@@ -15,7 +15,7 @@ class Client(Thread):
             path (Path): Path of source directory to synchronise with server.
         """
         Thread.__init__(self, daemon=False)
-        self.source_path = path
+        self.source_path = Path(path)
         self.last_poll_time = datetime.fromtimestamp(
             100000)  # init to 1970-01-02
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -143,20 +143,26 @@ class Client(Thread):
         for file in files:
             time.sleep(0.3)
 
+            relative_path = self.convert_to_relative_path(file)
+
             if file.exists():
-                print(file.stat().st_size)
                 if(file.stat().st_size <= 2147483648):  # 2.14GB
                     print(f'Client sending \'{file.name}\'')
-
-                    json_representation = json.dumps({"path": str(file),
+                    json_representation = json.dumps({"path": str(relative_path),
                                                       "data": file.read_bytes().decode('ISO8859-1')})
                     self.socket.send(json_representation.encode())
                 else:
                     print("Warning, file is too big to be sent!")
 
             else:  # File doesn't exist, just send name and no data.
-                json_representation = json.dumps({"path": str(file)})
+                json_representation = json.dumps({"path": str(relative_path)})
                 self.socket.send(json_representation.encode())
+
+    def convert_to_relative_path(self, path: Path) -> Path:
+
+        full_path = str(path.resolve())
+        relative_path = str(self.source_path.resolve())
+        return Path(os.path.relpath(full_path, relative_path))
 
     def terminate(self):
         """ Called to safely stop the client.
