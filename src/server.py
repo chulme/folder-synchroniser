@@ -27,7 +27,7 @@ class Server(Thread):
         conn, addr = self.socket.accept()
         print('Client-server connection established on', addr)
         while self.running:
-            msg = conn.recv(9999999999)
+            msg = conn.recv(2147483648)  # 2.15 GB
             if not msg:
                 break
             json_representation = json.loads(msg)

@@ -32,7 +32,6 @@ class Client(Thread):
         self.socket.connect((socket.gethostname(), 12345))
 
         while self.running:
-            print(self.seen_files)
             files = self.get_files_in_dir(self.source_path)
 
             modified_files = self.get_modified_files(files)
@@ -121,7 +120,7 @@ class Client(Thread):
 
         Returns:
             list[Path]: List of deleted files
-        
+
         """
         removed_files = list(set(self.seen_files)-(set(files)))
 
@@ -142,17 +141,22 @@ class Client(Thread):
             files (list[Path]): Files to send.
         """
         for file in files:
-            time.sleep(0.1)
-            print(f'Client sending \'{file.name}\'')
+            time.sleep(0.3)
 
-            json_representation = {}
             if file.exists():
-                json_representation = json.dumps({"path": str(file),
-                                                  "data": file.read_bytes().decode('ISO8859-1')})
-            else:
-                json_representation = json.dumps({"path": str(file)})
+                print(file.stat().st_size)
+                if(file.stat().st_size <= 2147483648):  # 2.14GB
+                    print(f'Client sending \'{file.name}\'')
 
-            self.socket.send(json_representation.encode())
+                    json_representation = json.dumps({"path": str(file),
+                                                      "data": file.read_bytes().decode('ISO8859-1')})
+                    self.socket.send(json_representation.encode())
+                else:
+                    print("Warning, file is too big to be sent!")
+
+            else:  # File doesn't exist, just send name and no data.
+                json_representation = json.dumps({"path": str(file)})
+                self.socket.send(json_representation.encode())
 
     def terminate(self):
         """ Called to safely stop the client.
