@@ -29,7 +29,7 @@ def step_imp(context):
 
 @then(u'The files are synchronised in the server folder')
 def step_imp(context):
-    time.sleep(1)
+    time.sleep(2)
     files = cl.Client.get_files_in_dir(context.src_path)
 
     assert len(files) > 0

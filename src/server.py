@@ -10,7 +10,7 @@ class Server(Thread):
         Args:
             path (Path): Path of source directory to synchronise with server.
         """
-        Thread.__init__(self, daemon=False)
+        Thread.__init__(self)
         self.destination_path = Path(path)
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.bind(('', 12345))
@@ -58,8 +58,9 @@ class Server(Thread):
         return Path(self.destination_path, path)
 
     def terminate(self):
-        """ Called to safely stop the server.
-        """
-        print("Server terminating.")
-        self.running = False
-        self.socket.close()
+        if self.is_alive():
+            """ Called to safely stop the server.
+            """
+            self.running = False
+            self.socket.close()
+            print("Server terminated.")

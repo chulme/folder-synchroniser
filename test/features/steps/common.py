@@ -24,15 +24,11 @@ def step_imp(context):
     context.server = srv.Server(context.dst_path)
     context.client = cl.Client(context.src_path)
 
-    context.server_thread = threading.Thread(target=context.server.run)
-    context.client_thread = threading.Thread(target=context.client.run)
-
-    context.server_thread.start()
-    context.client_thread.start()
+    context.server.start()
+    context.client.start()
 
 
 @then(u'Concurrent threads are joined')
 def step_imp(context):
     context.server.terminate()
     context.client.terminate()
-    context.server_thread.join()

@@ -14,7 +14,8 @@ class Client(Thread):
         Args:
             path (Path): Path of source directory to synchronise with server.
         """
-        Thread.__init__(self, daemon=False)
+        Thread.__init__(self)
+
         self.source_path = Path(path)
         self.last_poll_time = datetime.fromtimestamp(
             100000)  # init to 1970-01-02
@@ -167,6 +168,8 @@ class Client(Thread):
     def terminate(self):
         """ Called to safely stop the client.
         """
-        print("Client terminating.")
-        self.running = False
-        self.socket.close()
+
+        if self.is_alive():
+            self.running = False
+            self.socket.close()
+            print("Client terminated.")
