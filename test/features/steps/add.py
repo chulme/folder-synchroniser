@@ -1,9 +1,3 @@
-import environment
-from behave import given, when, then
-from pathlib import Path
-import time
-import threading
-
 import sys
 import os
 import shutil
@@ -11,9 +5,15 @@ import shutil
 sys.path.append(os.path.dirname(
     os.path.realpath(__file__)) + "\\..\\..\\..\\src")
 
-import server as srv
+
 import client as cl
-import filediff
+import server as srv
+import environment
+from behave import given, when, then
+from pathlib import Path
+import time
+import threading
+
 
 
 @given(u'Source-destination folders are created')
@@ -60,7 +60,8 @@ def step_imp(context):
 @then(u'The files are synchronised in the server folder')
 def step_imp(context):
     time.sleep(1)
-    files = filediff.FileDiff().get_files_in_dir(context.src_path)
+    files = cl.Client.get_files_in_dir(context.src_path)
+
     assert len(files) > 0
     for file in files:
         dst_equivalent = Path(str(file).replace("src", "dst"))

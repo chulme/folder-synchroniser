@@ -6,7 +6,7 @@ import json
 
 class Server(object):
     def __init__(self, path: Path):
-        """ Constructor for server.
+        """ Initialiser for server.
         Args:
             path (Path): Path of source directory to synchronise with server.
         """
@@ -34,18 +34,20 @@ class Server(object):
         conn.close()
         print("Client-server connection closed.")
 
-    def save(self, file: dict):
+    @staticmethod
+    def save(file: dict[str, str]):
         """ Saves received files to the destination directory.
 
         Args:
-            file (dict): Original file path and encoded data to save.
+            file (dict[str,str]): Original file path and encoded data to save.
         """
-        dst_path = self.convert_src_to_dst_path(Path(file["path"]))
+        dst_path = Server.convert_src_to_dst_path(Path(file["path"]))
         print(f'Server saving {dst_path.name}')
         dst_path.parent.mkdir(parents=True, exist_ok=True)
         dst_path.write_bytes(bytes(file["data"], 'ISO8859-1'))
 
-    def convert_src_to_dst_path(self, path: Path) -> Path:
+    @staticmethod
+    def convert_src_to_dst_path(path: Path) -> Path:
         """ Converts the received original path of a file, to the equivalent location
             in the destination folder.
         """

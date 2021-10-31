@@ -9,7 +9,7 @@ import json
 class Client(object):
 
     def __init__(self, path: Path):
-        """ Constructor for client.
+        """ Initialiser for client.
         Args:
             path (Path): Path of source directory to synchronise with server.
         """
@@ -37,7 +37,8 @@ class Client(object):
             self.last_poll_time = datetime.now()
             time.sleep(0.5)
 
-    def get_files_in_dir(self, path: Path) -> list:
+    @staticmethod
+    def get_files_in_dir(path: Path) -> list[Path]:
         """ Recursively finds all the files in the target directory.
 
         Args:
@@ -49,12 +50,12 @@ class Client(object):
         files = []
         for file in Path(path).iterdir():
             if file.is_dir():
-                files.extend(self.get_files_in_dir(file))
+                files.extend(Client.get_files_in_dir(file))
             elif file.is_file():
                 files.append(file)
         return files
 
-    def get_modified_files(self, files: list) -> list:
+    def get_modified_files(self, files: list[Path]) -> list[Path]:
         """ Selects files that have been copied, modified, and deleted files.
 
             This is done in a single function/loop for efficiency.
@@ -95,9 +96,9 @@ class Client(object):
         Returns:
             bool: Whether or not the file is new.
         """
-        return (path not in self.seen_files)
+        return path not in self.seen_files
 
-    def send(self, files: list):
+    def send(self, files: list[Path]):
         """ Sends each modified file to the server.
 
             Data in wrapped in a JSON format, containing the original file path and ISO8859-1 encoded data.
@@ -105,7 +106,7 @@ class Client(object):
             file types.
 
         Args:
-            files (list): Files to send.
+            files (list[Path]): Files to send.
         """
         for file in files:
             time.sleep(0.1)
