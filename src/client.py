@@ -34,10 +34,10 @@ class Client(Thread):
         while self.running:
             files = self.get_files_in_dir(self.source_path)
 
-            modified_files = self.get_modified_files(files)
-            deleted_files = self.get_deleted_files(files)
+            modified_file_paths = self.get_modified_file_paths(files)
+            deleted_file_paths = self.get_deleted_file_paths(files)
 
-            files_to_send = modified_files+deleted_files
+            files_to_send = modified_file_paths+deleted_file_paths
 
             if len(files_to_send) > 0:
                 self.send_modified(files_to_send)
@@ -63,7 +63,7 @@ class Client(Thread):
                 files.append(file)
         return files
 
-    def get_modified_files(self, files: list[Path]) -> list[Path]:
+    def get_modified_file_paths(self, files: list[Path]) -> list[Path]:
         """ Selects files that are new, copied and modified files, while adding
             new files to the seen_files list for future reference.
 
@@ -73,7 +73,7 @@ class Client(Thread):
         Returns:
             list: File paths of modified files.
         """
-        modified_files = []
+        modified_file_paths = []
         new_files = []
 
         for file in files:
@@ -82,9 +82,9 @@ class Client(Thread):
                 self.seen_files.append(file)
 
             elif self.has_file_changed(file):
-                modified_files.append(file)
+                modified_file_paths.append(file)
 
-        return modified_files+new_files
+        return modified_file_paths+new_files
 
     def has_file_changed(self, file: Path) -> bool:
         """ Determines if a file has been modified.
@@ -111,8 +111,8 @@ class Client(Thread):
         """
         return path not in self.seen_files
 
-    def get_deleted_files(self, files: list[Path]) -> list[Path]:
-        """ Returns all files that have been deleted, and then removes
+    def get_deleted_file_paths(self, files: list[Path]) -> list[Path]:
+        """ Returns all paths that have been deleted, and then removes
             these elements from the seen_list.
 
         Args:

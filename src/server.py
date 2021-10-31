@@ -43,12 +43,13 @@ class Server(Thread):
             file (dict[str,str]): Original file path and encoded data to save.
         """
         dst_path = Server.convert_src_to_dst_path(Path(file["path"]))
-        print(f'Server saving {dst_path}')
         dst_path.parent.mkdir(parents=True, exist_ok=True)
         if("data" in file):
+            print(f'Server saving {dst_path}')
             dst_path.write_bytes(bytes(file["data"], 'ISO8859-1'))
         else:
-            dst_path.unlink()
+            print(f'Server deleting {dst_path}')
+            dst_path.unlink(missing_ok=True)
 
     @staticmethod
     def convert_src_to_dst_path(path: Path) -> Path:
