@@ -1,6 +1,8 @@
 # Folder Synchroniser
 This is a brief Python (3.10.0) project that aims to synchronise source and destination directories using a client-server that communications over an IP.
 
+This was developed and tested on Windows 11, so I cannot verifiy if it will work on Linux.
+
 ![Demo](doc/demo.gif)
 ## Usage
 To run the program, run [main.py](src/main.py) and specify the existing source and destination folders as the --src and --dst arguments respectively, such as:
