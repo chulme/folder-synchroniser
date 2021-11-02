@@ -1,6 +1,5 @@
 from pathlib import Path
 from behave import given, when, then
-import threading
 from src import client as cl
 from src import server as srv
 
