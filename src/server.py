@@ -15,6 +15,7 @@ class Server(Thread):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.bind(('', 12345))
         self.running = True
+        self.MAX_FILE_SIZE = 2147483648  # in bytes, equates to 2.15GB
 
     def run(self):
         """ Server entrypoint
@@ -27,19 +28,21 @@ class Server(Thread):
         conn, addr = self.socket.accept()
         print('Client-server connection established on', addr)
         while self.running:
-            msg = conn.recv(2147483648)  # 2.15 GB
+            msg = conn.recv(self.MAX_FILE_SIZE)
             if not msg:
                 break
             json_representation = json.loads(msg)
-            self.save(json_representation)
+            self.update(json_representation)
         conn.close()
         print("Client-server connection closed.")
 
-    def save(self, file: dict[str, str]):
-        """ Saves received files to the destination directory.
+    def update(self, file: dict[str, str]):
+        """ Updates a received file within the destination directory, in the appropriate location.
+
+        This can be writing to an existing or new file, or deleting a file if no data is present.
 
         Args:
-            file (dict[str,str]): Original file path and encoded data to save.
+            file (dict[str,str]): Original file path, and encoded data to save.
         """
         dst_path = self.convert_to_dst_path(Path(file["path"]))
 
@@ -58,9 +61,10 @@ class Server(Thread):
         return Path(self.destination_path, path)
 
     def terminate(self):
+        """ Called to safely stop the server.
+        """
+
         if self.is_alive():
-            """ Called to safely stop the server.
-            """
             self.running = False
             self.socket.close()
             print("Server terminated.")

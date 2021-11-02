@@ -22,6 +22,7 @@ class Client(Thread):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.running = True
         self.seen_files = []
+        self.MAX_FILE_SIZE = 2147483648  # in bytes, equates to 2.15GB
 
     def run(self):
         """ Client entrypoint
@@ -41,7 +42,7 @@ class Client(Thread):
             files_to_send = modified_file_paths+deleted_file_paths
 
             if len(files_to_send) > 0:
-                self.send_modified(files_to_send)
+                self.send(files_to_send)
 
             self.last_poll_time = datetime.now()
             time.sleep(0.5)
@@ -94,7 +95,7 @@ class Client(Thread):
             If the file has been updated after the last poll, the file has been modified.
 
         Args:
-            files (Path): file to check if it has been modified.
+            file (Path): file to check if it has been modified.
 
         Returns:
             bool: Whether or not the file has been modified.
@@ -116,6 +117,9 @@ class Client(Thread):
         """ Returns all paths that have been deleted, and then removes
             these elements from the seen_list.
 
+            This is done by comparing the list of found paths in the source
+            directory, against the seen_list.
+
         Args:
             files (list[Path]): list of paths to search over
 
@@ -131,23 +135,23 @@ class Client(Thread):
 
         return removed_files
 
-    def send_modified(self, files: list[Path]):
+    def send(self, files: list[Path]):
         """ Sends each modified file to the server.
 
             Data in wrapped in a JSON format, containing the original file path and ISO8859-1 encoded data.
-            The use of ISO8859-1 encoding is because I've found it to be the most compatible with different
-            file types.
+            The use of ISO8859-1 encoding is to provide a universal and compact format for the server to receive,
+            facilitating different file types.
 
         Args:
             files (list[Path]): Files to send.
         """
         for file in files:
-            time.sleep(0.3)
+            time.sleep(0.3)  # sleep to prevent overloading the server
 
             relative_path = self.convert_to_relative_path(file)
 
             if file.exists():
-                if(file.stat().st_size <= 2147483648):  # 2.14GB
+                if file.stat().st_size <= self.MAX_FILE_SIZE:
                     print(f'Client sending \'{file.name}\'')
                     json_representation = json.dumps({"path": str(relative_path),
                                                       "data": file.read_bytes().decode('ISO8859-1')})
@@ -160,7 +164,16 @@ class Client(Thread):
                 self.socket.send(json_representation.encode())
 
     def convert_to_relative_path(self, path: Path) -> Path:
+        """ Converts a given path to path relative to the source directory, such as:
+            C:\\Repositories\\folder-synchroniser\\source-test-dir\\folder\\file.txt
+            => folder\\file.txt
 
+            Args:
+                path (Path): Path to convert
+
+            Returns:
+                Path: The relative path to the file
+        """
         full_path = str(path.resolve())
         relative_path = str(self.source_path.resolve())
         return Path(os.path.relpath(full_path, relative_path))
